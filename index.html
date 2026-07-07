@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>암세포 신생혈관 및 항암제 효과 통합 시뮬레이션 대시보드</title>
+    <!-- 테일윈드 CSS 탑재 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #0b0f19;
+            color: #f3f4f6;
+        }
+        /* 맥박 애니메이션 효과 */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.9); opacity: 0.8; }
+            50% { transform: scale(1.15); opacity: 0.4; }
+            100% { transform: scale(0.9); opacity: 0.8; }
+        }
+        .tumor-pulse {
+            animation: pulse-ring 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen font-sans">
+
+    <!-- 통합 헤더 영역 -->
+    <header class="p-5 border-b border-gray-800 bg-gray-900 bg-opacity-70 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+                <span class="px-3 py-1 text-xs font-semibold bg-blue-950/70 text-blue-400 border border-blue-700/50 rounded-full">종합 암 미세환경 시뮬레이터</span>
+                <h1 class="text-2xl font-bold mt-2 text-white flex items-center gap-2">
+                    <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"></path>
+                    </svg>
+                    암세포 신생혈관 및 항암제 프랙탈 통합 시뮬레이터
+                </h1>
+                <p class="text-xs text-gray-400 mt-1">암세포가 방출하는 신생혈관 촉진 인자 유도 성장과 약물 처리에 따른 분지 억제 및 프랙탈 구조 변화를 분석합니다.</p>
+            </div>
+            
+            <!-- 탭 전환 컨트롤러 -->
+            <div class="flex bg-gray-950 p-1.5 rounded-xl border border-gray-800 self-stretch md:self-auto">
+                <button id="tab-v3-btn" onclick="switchTab('v3')" class="flex-1 md:flex-none px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-300 bg-blue-600 text-white shadow-lg">
+                    신생혈관 유도 성장
+                </button>
+                <button id="tab-v4-btn" onclick="switchTab('v4')" class="flex-1 md:flex-none px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-300 text-gray-400 hover:text-white">
+                    항암제 및 프랙탈 분석
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 메인 컨텐츠 영역 -->
+    <main class="flex-grow p-4 md:p-6 max-w-7xl mx-auto w-full">
+        
+        <!-- ==================== 탭 1: 암세포 신생혈관 유도 성장 시뮬레이터 ==================== -->
+        <section id="panel-v3" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- 왼쪽 제어 패널 -->
+            <div class="lg:col-span-4 flex flex-col gap-6">
+                <!-- 생물학적 변수 조절 패널 -->
+                <div class="p-6 bg-gray-900 border border-gray-800 rounded-2xl shadow-xl">
+                    <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 bg-red-500 rounded-full animate-ping"></span>
+                        미세환경 인자 제어
+                    </h2>
+                    
+                    <div class="space-y-5">
+                        <!-- VEGF 농도 슬라이더 -->
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="text-sm font-medium text-gray-300 flex items-center gap-1.5">
+                                    신생혈관 촉진 인자 분비 농도
+                                    <span class="text-xs text-red-400 font-normal">(VEGF)</span>
+                                </label>
+                                <span id="v3-vegf-val" class="px-2 py-0.5 text-xs font-mono bg-red-950/60 text-red-400 border border-red-900/50 rounded">75%</span>
+                            </div>
+                            <input type="range" id="v3-vegf" min="10" max="100" value="75" class="w-full accent-red-500 bg-gray-950 h-1.5 rounded-lg appearance-none cursor-pointer">
+                            <p class="text-xs text-gray-500 mt-1">농도가 높을수록 더 많은 잔가지가 형성되며 성장 속도가 빨라집니다.</p>
+                        </div>
+
+                        <!-- 혈관 기초 굵기 슬라이더 -->
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="text-sm font-medium text-gray-300">
+                                    모혈관 시작 두께
+                                </label>
+                                <span id="v3-thick-val" class="px-2 py-0.5 text-xs font-mono bg-gray-800 text-gray-300 rounded">6 px</span>
+                            </div>
+                            <input type="range" id="v3-thick" min="3" max="12" value="6" class="w-full accent-blue-500 bg-gray-950 h-1.5 rounded-lg appearance-none cursor-pointer">
+                        </div>
+
+                        <!-- 프랙탈 분지 깊이 제한 -->
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="text-sm font-medium text-gray-300">
+                                    최대 발달 세대 제한
+                                </label>
+                                <span id="v3-depth-val" class="px-2 py-0.5 text-xs font-mono bg-purple-950/60 text-purple-400 border border-purple-900/50 rounded">7 세대</span>
+                            </div>
+                            <input type="range" id="v3-depth" min="5" max="9" value="7" class="w-full accent-purple-500 bg-gray-950 h-1.5 rounded-lg appearance-none cursor-pointer">
+                        </div>
+
+                        <!-- 애니메이션 속도 조절 -->
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="text-sm font-medium text-gray-300">
+                                    혈관 발달 속도
+                                </label>
+                                <span id="v3-speed-val" class="px-2 py-0.5 text-xs font-mono bg-teal-950/60 text-teal-400 border border-teal-900/50 rounded">보통</span>
+                            </div>
+                            <input type="range" id="v3-speed" min="1" max="15" value="5" class="w-full accent-teal-500 bg-gray-950 h-1.5 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 시뮬레이터 인터랙션 가이드 -->
+                <div class="p-6 bg-gray-900/60 border border-gray-800/80 rounded-2xl">
+                    <h3 class="text-sm font-bold text-gray-200 mb-3 flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-yellow-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.011 11.25H15v-.011m0 .011v.011m0-.011H15v-.011m0 .011v.011M20.25 10.5a8.25 8.25 0 11-16.5 0 8.25 8.25 0 0116.5 0zM12 12h.01M12 12h-.01M12 12v-.01M12 12v.01m-6-6h.01M6 6h-.01M6 6v-.01M6 6v.01m12-3h.01M18 3h-.01M18 3v-.01M18 3v.01M21 21H3"></path>
+                        </svg>
+                        작동 방법
+                    </h3>
+                    <ul class="text-xs text-gray-400 space-y-2.5 list-disc pl-4 leading-relaxed">
+                        <li><strong class="text-gray-300">오른쪽 화면을 클릭</strong>하면, 암세포가 있는 위치가 마우스를 누른 곳으로 즉시 이동합니다.</li>
+                        <li>신생 혈관이 암세포 위치를 향해 <span class="text-yellow-400 font-semibold">동적으로 경로를 변경하며 추적 성장</span>합니다.</li>
+                        <li>다양한 제어 슬라이더를 실시간으로 조절하며 성장 과정을 시각적으로 확인해 보세요.</li>
+                    </ul>
+                    <div class="mt-4 pt-4 border-t border-gray-800 flex justify-between">
+                        <button onclick="v3ResetTarget()" class="px-3 py-1.5 text-xs font-semibold rounded bg-gray-800 hover:bg-gray-700 text-gray-300 transition-colors">
+                            위치 기본값 복원
+                        </button>
+                        <button id="v3-start-btn" onclick="v3StartSimulation()" class="px-4 py-1.5 text-xs font-semibold rounded bg-red-600 hover:bg-red-500 text-white transition-colors">
+                            시뮬레이션 재생성
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 오른쪽 캔버스 및 실시간 분석창 -->
+            <div class="lg:col-span-8 flex flex-col gap-6">
+                <div class="relative bg-black rounded-2xl overflow-hidden border border-gray-800 shadow-2xl flex flex-col">
+                    <!-- 캔버스 정보 바 -->
+                    <div class="absolute top-4 left-4 z-10 flex gap-2">
+                        <div class="px-3 py-1 text-xs font-mono bg-black/80 backdrop-blur border border-gray-800 rounded-full text-red-400 flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
+                            자극 농도: <span id="v3-telemetry-vegf">75%</span>
+                        </div>
+                        <div class="px-3 py-1 text-xs font-mono bg-black/80 backdrop-blur border border-gray-800 rounded-full text-gray-300">
+                            총 혈관 마디: <span id="v3-vessel-count">0 개</span>
+                        </div>
+                    </div>
+                    
+                    <div class="absolute top-4 right-4 z-10">
+                        <span id="v3-status-badge" class="px-3 py-1 text-xs font-semibold bg-red-950/60 text-red-500 border border-red-900/50 rounded-full">신생혈관 발달 진행 중</span>
+                    </div>
+
+                    <!-- 캔버스 렌더링 영역 -->
+                    <div class="w-full bg-gray-950 flex items-center justify-center p-2" style="min-height: 480px;">
+                        <canvas id="v3-canvas" width="800" height="500" class="w-full h-auto max-w-full rounded-lg cursor-crosshair bg-black border border-gray-900 transition-all duration-300 shadow-inner"></canvas>
+                    </div>
+
+                    <!-- 하단 상태 및 실시간 해설창 -->
+                    <div class="p-4 bg-gray-900 border-t border-gray-800 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">암세포 중심 위치</h4>
+                            <p class="text-sm font-semibold text-white mt-1">가로: <span id="v3-pos-x">400</span>, 세로: <span id="v3-pos-y">130</span> <span class="text-xs text-yellow-500 font-normal">(화면 클릭 시 이동)</span></p>
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">미세 환경 분석 보고서</h4>
+                            <p id="v3-dynamic-commentary" class="text-xs text-gray-400 mt-1 leading-relaxed">자극원인 신생혈관 촉진 인자가 풍부하여 기존 혈관 내부의 세포들이 암세포를 향해 활발하게 뻗어나가고 있습니다.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ==================== 탭 2: 항암제 투여량별 신생 혈관 프랙탈 시뮬레이터 ==================== -->
+        <section id="panel-v4" class="grid grid-cols-1 lg:grid-cols-12 gap-6 hidden">
+            <!-- 왼쪽 제어 패널 -->
+            <div class="lg:col-span-4 flex flex-col gap-6">
+                <!-- 약물 투여 제어 패널 -->
+                <div class="p-6 bg-gray-900 border border-gray-800 rounded-2xl shadow-xl">
+                    <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full"></span>
+                        약물 투여 제어
+                    </h2>
+                    
+                    <div class="space-y-5">
+                        <!-- 항암제 투여량 슬라이더 -->
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="text-sm font-medium text-gray-300 flex items-center gap-1.5">
+                                    항암제 투여 농도
+                                </label>
+                                <span id="v4-drug-val" class="px-2.5 py-0.5 text-xs font-bold bg-emerald-950/60 text-emerald-400 border border-emerald-900/50 rounded">대조군</span>
+                            </div>
+                            <input type="range" id="v4-drug" min="0" max="100" value="0" class="w-full accent-emerald-500 bg-gray-950 h-1.5 rounded-lg appearance-none cursor-pointer">
+                            <p class="text-xs text-gray-500 mt-1">항암제 농도가 높아질수록 성장을 차단하여 혈관 분지 현상이 급격하게 억제됩니다.</p>
+                        </div>
+
+                        <!-- 프랙탈 차원 타겟 깊이 제한 -->
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="text-sm font-medium text-gray-300">
+                                    생장 발달 단계
+                                </label>
+                                <span id="v4-depth-val" class="px-2 py-0.5 text-xs font-mono bg-purple-950/60 text-purple-400 border border-purple-900/50 rounded">7 세대</span>
+                            </div>
+                            <input type="range" id="v4-depth" min="5" max="8" value="7" class="w-full accent-purple-500 bg-gray-950 h-1.5 rounded-lg appearance-none cursor-pointer">
+                        </div>
+
+                        <!-- 발달 속도 조절 -->
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="text-sm font-medium text-gray-300">
+                                    시뮬레이션 속도
+                                </label>
+                                <span id="v4-speed-val" class="px-2 py-0.5 text-xs font-mono bg-teal-950/60 text-teal-400 border border-teal-900/50 rounded">보통</span>
+                            </div>
+                            <input type="range" id="v4-speed" min="1" max="15" value="5" class="w-full accent-teal-500 bg-gray-950 h-1.5 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 프랙탈 분석 리포트 -->
+                <div class="p-6 bg-gray-900 border border-gray-800 rounded-2xl">
+                    <h3 class="text-sm font-bold text-gray-200 mb-4 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                        혈관 형태 분석 보고서
+                    </h3>
+                    
+                    <div class="space-y-3.5">
+                        <div class="flex justify-between items-center pb-2 border-b border-gray-800">
+                            <span class="text-xs text-gray-400">프랙탈 차원</span>
+                            <span id="v4-fractal-dim" class="text-sm font-bold text-emerald-400 font-mono">1.78</span>
+                        </div>
+                        <div class="flex justify-between items-center pb-2 border-b border-gray-800">
+                            <span class="text-xs text-gray-400">혈관 복잡 패턴</span>
+                            <span id="v4-complexity-status" class="text-xs px-2 py-0.5 rounded font-semibold bg-red-950 text-red-400 border border-red-900/50">매우 조밀하고 침습적</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-gray-400">총 혈관 가닥 형성 개수</span>
+                            <span id="v4-branch-count" class="text-sm font-bold text-white font-mono">0 개</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 p-3.5 bg-gray-950 rounded-xl border border-gray-850">
+                        <h4 class="text-xs font-bold text-gray-300">임상 효능 상태:</h4>
+                        <p id="v4-clinical-insight" class="text-[11px] text-gray-400 mt-1 leading-relaxed">
+                            약물이 투여되지 않아 암세포 근처의 혈관 구조가 기형적이고 빽빽하게 뻗어나가고 있습니다. 종양 성장과 전이를 조장하는 단계입니다.
+                        </p>
+                    </div>
+
+                    <div class="mt-4">
+                        <button id="v4-start-btn" onclick="v4StartSimulation()" class="w-full py-2 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition-colors">
+                            투여 모의 실험 개시
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 오른쪽 캔버스 및 수치 시각화 -->
+            <div class="lg:col-span-8 flex flex-col gap-6">
+                <div class="relative bg-black rounded-2xl overflow-hidden border border-gray-800 shadow-2xl flex flex-col">
+                    <!-- 캔버스 정보 바 -->
+                    <div class="absolute top-4 left-4 z-10 flex gap-2">
+                        <div class="px-3 py-1 text-xs font-mono bg-black/80 backdrop-blur border border-gray-800 rounded-full text-emerald-400 flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                            약물 농도: <span id="v4-telemetry-drug">0%</span>
+                        </div>
+                        <div class="px-3 py-1 text-xs font-mono bg-black/80 backdrop-blur border border-gray-800 rounded-full text-gray-300">
+                            프랙탈 차원 지표: <span id="v4-telemetry-dim">D = 1.78</span>
+                        </div>
+                    </div>
+                    
+                    <div class="absolute top-4 right-4 z-10">
+                        <span id="v4-status-badge" class="px-3 py-1 text-xs font-semibold bg-emerald-950/60 text-emerald-400 border border-emerald-900/50 rounded-full">대조 상태 분석 중</span>
+                    </div>
+
+                    <!-- 캔버스 렌더링 영역 -->
+                    <div class="w-full bg-gray-950 flex items-center justify-center p-2" style="min-height: 480px;">
+                        <canvas id="v4-canvas" width="800" height="500" class="w-full h-auto max-w-full rounded-lg bg-black border border-gray-900 shadow-inner"></canvas>
+                    </div>
+
+                    <!-- 하단 정보 패널 -->
+                    <div class="p-4 bg-gray-900 border-t border-gray-800">
+                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">항암 약물 투약량에 따른 혈관 밀도 분석표</h4>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                            <div class="bg-gray-950 p-2.5 rounded-lg border border-gray-850 text-center">
+                                <p class="text-[10px] text-gray-500">대조군(0%)</p>
+                                <p class="text-xs font-semibold text-gray-300 mt-1">D ≈ 1.7 ~ 1.8</p>
+                                <p class="text-[9px] text-red-400 mt-0.5">조밀한 망 구조</p>
+                            </div>
+                            <div class="bg-gray-950 p-2.5 rounded-lg border border-gray-850 text-center">
+                                <p class="text-[10px] text-gray-500">저농도(25%)</p>
+                                <p class="text-xs font-semibold text-gray-300 mt-1">D ≈ 1.5 ~ 1.6</p>
+                                <p class="text-[9px] text-orange-400 mt-0.5">성장 차단 발생</p>
+                            </div>
+                            <div class="bg-gray-950 p-2.5 rounded-lg border border-gray-850 text-center">
+                                <p class="text-[10px] text-gray-500">중농도(50%)</p>
+                                <p class="text-xs font-semibold text-gray-300 mt-1">D ≈ 1.3 ~ 1.4</p>
+                                <p class="text-[9px] text-yellow-400 mt-0.5">분지 감소 뚜렷함</p>
+                            </div>
+                            <div class="bg-gray-950 p-2.5 rounded-lg border border-gray-850 text-center">
+                                <p class="text-[10px] text-gray-500">고농도(80%+)</p>
+                                <p class="text-xs font-semibold text-gray-300 mt-1">D &lt; 1.15</p>
+                                <p class="text-[9px] text-emerald-400 mt-0.5">혈관 소멸 유도</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 푸터 영역 -->
+    <footer class="p-6 border-t border-gray-900 bg-gray-950 text-center text-xs text-gray-500">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <p>© 통합 의과학 교육 플랫폼 - 암 생태계 기하학 분석</p>
+            <div class="flex gap-4">
+                <span class="hover:text-gray-300">생물학적 신생혈관 유도 모델링</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 자바스크립트 통합 제어 코드 -->
+    <script>
+        // 전역 시뮬레이션 상태 토글 변수
+        let activeTab = 'v3';
+
+        // =========================================================================
+        // [시뮬레이터 1: 신생혈관 유도 성장 상태 및 변수]
+        // =========================================================================
+        const v3State = {
+            canvas: null,
+            ctx: null,
+            animationId: null,
+            isDrawing: false,
+            drawQueue: [],
+            totalBranches: 0,
+            
+            // 타겟(암세포 코어) 위치
+            targetX: 0,
+            targetY: 130,
+            
+            // 컨트롤 패널 요소들
+            elVegf: null,
+            elThick: null,
+            elDepth: null,
+            elSpeed: null,
+            
+            // 텔레메트리/UI 요소들
+            elVegfVal: null,
+            elThickVal: null,
+            elDepthVal: null,
+            elSpeedVal: null,
+            elVesselCount: null,
+            elStatusBadge: null,
+            elTelemetryVegf: null,
+            elPosX: null,
+            elPosY: null,
+            elCommentary: null
+        };
+
+        // =========================================================================
+        // [시뮬레이터 2: 항암제 및 프랙탈 분석 상태 및 변수]
+        // =========================================================================
+        const v4State = {
+            canvas: null,
+            ctx: null,
+            animationId: null,
+            isDrawing: false,
+            drawQueue: [],
+            totalBranches: 0,
+            
+            // 컨트롤 패널 요소들
+            elDrug: null,
+            elDepth: null,
+            elSpeed: null,
+            
+            // 텔레메트리/UI 요소들
+            elDrugVal: null,
+            elDepthVal: null,
+            elSpeedVal: null,
+            elBranchCount: null,
+            elFractalDim: null,
+            elComplexity: null,
+            elClinicalInsight: null,
+            elStatusBadge: null,
+            elTelemetryDrug: null,
+            elTelemetryDim: null
+        };
+
+        // =========================================================================
+        // [페이지 초기화 및 이벤트 바인딩]
+        // =========================================================================
+        window.onload = function() {
+            // --- v3 엘리먼트 수집 및 바인딩 ---
+            v3State.canvas = document.getElementById('v3-canvas');
+            v3State.ctx = v3State.canvas.getContext('2d');
+            v3State.elVegf = document.getElementById('v3-vegf');
+            v3State.elThick = document.getElementById('v3-thick');
+            v3State.elDepth = document.getElementById('v3-depth');
+            v3State.elSpeed = document.getElementById('v3-speed');
+            v3State.elVegfVal = document.getElementById('v3-vegf-val');
+            v3State.elThickVal = document.getElementById('v3-thick-val');
+            v3State.elDepthVal = document.getElementById('v3-depth-val');
+            v3State.elSpeedVal = document.getElementById('v3-speed-val');
+            v3State.elVesselCount = document.getElementById('v3-vessel-count');
+            v3State.elStatusBadge = document.getElementById('v3-status-badge');
+            v3State.elTelemetryVegf = document.getElementById('v3-telemetry-vegf');
+            v3State.elPosX = document.getElementById('v3-pos-x');
+            v3State.elPosY = document.getElementById('v3-pos-y');
+            v3State.elCommentary = document.getElementById('v3-dynamic-commentary');
+
+            v3State.targetX = v3State.canvas.width / 2;
+            v3State.targetY = 130;
+
+            // v3 입력 변화 리스너
+            v3State.elVegf.addEventListener('input', () => { v3UpdateUI(); v3StartSimulation(); });
+            v3State.elThick.addEventListener('input', () => { v3UpdateUI(); v3StartSimulation(); });
+            v3State.elDepth.addEventListener('input', () => { v3UpdateUI(); v3StartSimulation(); });
+            v3State.elSpeed.addEventListener('input', () => { v3UpdateUI(); v3StartSimulation(); });
+
+            // v3 캔버스 클릭 이벤트 (암세포 종양 유도 좌표 변경)
+            v3State.canvas.addEventListener('mousedown', function(e) {
+                const rect = v3State.canvas.getBoundingClientRect();
+                const scaleX = v3State.canvas.width / rect.width;
+                const scaleY = v3State.canvas.height / rect.height;
+                
+                v3State.targetX = (e.clientX - rect.left) * scaleX;
+                v3State.targetY = (e.clientY - rect.top) * scaleY;
+                
+                v3UpdateUI();
+                v3StartSimulation();
+            });
+
+            // --- v4 엘리먼트 수집 및 바인딩 ---
+            v4State.canvas = document.getElementById('v4-canvas');
+            v4State.ctx = v4State.canvas.getContext('2d');
+            v4State.elDrug = document.getElementById('v4-drug');
+            v4State.elDepth = document.getElementById('v4-depth');
+            v4State.elSpeed = document.getElementById('v4-speed');
+            v4State.elDrugVal = document.getElementById('v4-drug-val');
+            v4State.elDepthVal = document.getElementById('v4-depth-val');
+            v4State.elSpeedVal = document.getElementById('v4-speed-val');
+            v4State.elBranchCount = document.getElementById('v4-branch-count');
+            v4State.elFractalDim = document.getElementById('v4-fractal-dim');
+            v4State.elComplexity = document.getElementById('v4-complexity-status');
+            v4State.elClinicalInsight = document.getElementById('v4-clinical-insight');
+            v4State.elStatusBadge = document.getElementById('v4-status-badge');
+            v4State.elTelemetryDrug = document.getElementById('v4-telemetry-drug');
+            v4State.elTelemetryDim = document.getElementById('v4-telemetry-dim');
+
+            // v4 입력 변화 리스너
+            v4State.elDrug.addEventListener('input', () => { v4UpdateUI(); v4StartSimulation(); });
+            v4State.elDepth.addEventListener('input', () => { v4UpdateUI(); v4StartSimulation(); });
+            v4State.elSpeed.addEventListener('input', () => { v4UpdateUI(); v4StartSimulation(); });
+
+            // 초기 로딩 시 v3 구동
+            switchTab('v3');
+        };
+
+        // =========================================================================
+        // [탭 전환 핸들러]
+        // =========================================================================
+        function switchTab(tabId) {
+            activeTab = tabId;
+            
+            const tabV3Btn = document.getElementById('tab-v3-btn');
+            const tabV4Btn = document.getElementById('tab-v4-btn');
+            const panelV3 = document.getElementById('panel-v3');
+            const panelV4 = document.getElementById('panel-v4');
+
+            // 이전 탭에서 돌던 애니메이션 프레임 중지하여 메모리 누수 및 충돌 예방
+            if (v3State.animationId) {
+                cancelAnimationFrame(v3State.animationId);
+                v3State.animationId = null;
+                v3State.isDrawing = false;
+            }
+            if (v4State.animationId) {
+                cancelAnimationFrame(v4State.animationId);
+                v4State.animationId = null;
+                v4State.isDrawing = false;
+            }
+
+            if (tabId === 'v3') {
+                // UI 탭 전환
+                tabV3Btn.className = "flex-1 md:flex-none px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-300 bg-blue-600 text-white shadow-lg";
+                tabV4Btn.className = "flex-1 md:flex-none px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-300 text-gray-400 hover:text-white";
+                panelV3.classList.remove('hidden');
+                panelV4.classList.add('hidden');
+                
+                // 시뮬레이션 가동
+                v3UpdateUI();
+                v3StartSimulation();
+            } else {
+                // UI 탭 전환
+                tabV3Btn.className = "flex-1 md:flex-none px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-300 text-gray-400 hover:text-white";
+                tabV4Btn.className = "flex-1 md:flex-none px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-300 bg-emerald-600 text-white shadow-lg";
+                panelV3.classList.add('hidden');
+                panelV4.classList.remove('hidden');
+                
+                // 시뮬레이션 가동
+                v4UpdateUI();
+                v4StartSimulation();
+            }
+        }
+
+        // =========================================================================
+        // [시뮬레이터 1: 코어 알고리즘 및 뷰]
+        // =========================================================================
+        function v3UpdateUI() {
+            const vegfVal = parseInt(v3State.elVegf.value);
+            const thickVal = parseInt(v3State.elThick.value);
+            const depthVal = parseInt(v3State.elDepth.value);
+            const speedVal = parseInt(v3State.elSpeed.value);
+
+            v3State.elVegfVal.textContent = `${vegfVal}%`;
+            v3State.elThickVal.textContent = `${thickVal} px`;
+            v3State.elDepthVal.textContent = `${depthVal} 세대`;
+            
+            let speedText = "보통";
+            if (speedVal <= 3) speedText = "매우 느림";
+            else if (speedVal < 6) speedText = "보통";
+            else if (speedVal < 11) speedText = "매우 빠름";
+            else speedText = "초고속 렌더";
+            v3State.elSpeedVal.textContent = speedText;
+
+            // 실시간 상단 텔레메트리 업데이트
+            v3State.elTelemetryVegf.textContent = `${vegfVal}%`;
+            v3State.elPosX.textContent = Math.round(v3State.targetX);
+            v3State.elPosY.textContent = Math.round(v3State.targetY);
+
+            // VEGF 농도에 따른 직관적 의학 주석 변경
+            if (vegfVal < 30) {
+                v3State.elCommentary.textContent = "저농도 자극: 종양 유래 사이토카인 자극이 매우 미약하여 신생 혈관이 고립적으로 뻗으며, 분지가 크게 쇠퇴합니다.";
+            } else if (vegfVal < 70) {
+                v3State.elCommentary.textContent = "적정 자극: 종양 중심을 타깃으로 유연한 방향성을 가집니다. 종양에서 유출된 VEGF 구배(Gradient)가 정상 조직 공간을 뚫고 혈관을 이끕니다.";
+            } else {
+                v3State.elCommentary.textContent = "고농도 폭발 자극: 폭발적인 신생 혈관 증식이 발생하고 있습니다. 주위 세포외 기질을 무작위로 파고들며 조밀하고 불규칙한 무질서 네트워크를 형성합니다.";
+            }
+        }
+
+        function v3ResetTarget() {
+            v3State.targetX = v3State.canvas.width / 2;
+            v3State.targetY = 130;
+            v3UpdateUI();
+            v3StartSimulation();
+        }
+
+        function v3StartSimulation() {
+            if (v3State.animationId) {
+                cancelAnimationFrame(v3State.animationId);
+                v3State.animationId = null;
+            }
+
+            v3State.isDrawing = true;
+            v3State.elStatusBadge.textContent = "신생혈관 발달 진행 중";
+            v3State.elStatusBadge.className = "px-3 py-1 text-xs font-semibold bg-red-950/60 text-red-500 border border-red-900/50 rounded-full animate-pulse";
+
+            // 도화지 초기화
+            v3State.ctx.clearRect(0, 0, v3State.canvas.width, v3State.canvas.height);
+
+            // 시발점(암세포 코어 마킹)
+            v3DrawTargetCircle();
+
+            v3State.drawQueue = [];
+            v3State.totalBranches = 0;
+
+            const initThickness = parseInt(v3State.elThick.value);
+            const vegfLevel = parseInt(v3State.elVegf.value);
+            const maxDepth = parseInt(v3State.elDepth.value);
+
+            // 트리 형태 생성 연산 시작 (재귀 연산을 하되, 한 프레임에 다 그리지 않고 큐에 차곡차곡 적재)
+            v3GenerateVesselTree(v3State.canvas.width / 2, v3State.canvas.height - 30, 85, 90, initThickness, vegfLevel, 0, maxDepth);
+            
+            v3State.elVesselCount.textContent = v3State.totalBranches.toLocaleString() + " 개";
+
+            // 프레임 애니메이션 적용
+            v3AnimateVessels();
+        }
+
+        function v3DrawTargetCircle() {
+            // 암세포 중심 코어
+            v3State.ctx.beginPath();
+            v3State.ctx.arc(v3State.targetX, v3State.targetY, 26, 0, Math.PI * 2);
+            v3State.ctx.fillStyle = 'rgba(50, 0, 0, 0.45)';
+            v3State.ctx.fill();
+            v3State.ctx.strokeStyle = '#df1c1c';
+            v3State.ctx.lineWidth = 1.5;
+            v3State.ctx.stroke();
+
+            // 내부 암세포 실체
+            v3State.ctx.beginPath();
+            v3State.ctx.arc(v3State.targetX, v3State.targetY, 15, 0, Math.PI * 2);
+            v3State.ctx.fillStyle = '#1c0101';
+            v3State.ctx.fill();
+            v3State.ctx.strokeStyle = '#ef4444';
+            v3State.ctx.lineWidth = 3;
+            v3State.ctx.stroke();
+
+            // 맥박 십자 포인터
+            v3State.ctx.beginPath();
+            v3State.ctx.moveTo(v3State.targetX - 35, v3State.targetY);
+            v3State.ctx.lineTo(v3State.targetX + 35, v3State.targetY);
+            v3State.ctx.moveTo(v3State.targetX, v3State.targetY - 35);
+            v3State.ctx.lineTo(v3State.targetX, v3State.targetY + 35);
+            v3State.ctx.strokeStyle = 'rgba(239, 68, 68, 0.5)';
+            v3State.ctx.lineWidth = 1;
+            v3State.ctx.stroke();
+
+            // Target 텍스트 배너
+            v3State.ctx.font = '10px monospace';
+            v3State.ctx.fillStyle = '#ef4444';
+            v3State.ctx.fillText("VEGF SOURCE", v3State.targetX - 35, v3State.targetY - 42);
+        }
+
+        function v3GenerateVesselTree(startX, startY, length, angle, thickness, vegf, currentDepth, maxDepth) {
+            v3State.totalBranches++;
+
+            const angleRad = angle * Math.PI / 180;
+            const endX = startX + length * Math.cos(angleRad);
+            const endY = startY - length * Math.sin(angleRad);
+
+            // 렌더링 지연 효과를 위한 드로잉 큐에 등록
+            v3State.drawQueue.push({
+                x1: startX,
+                y1: startY,
+                x2: endX,
+                y2: endY,
+                thick: thickness,
+                depth: currentDepth
+            });
+
+            if (currentDepth >= maxDepth) return;
+
+            // 가지 개수 설정 (VEGF 농도가 자극을 주어 85% 이상이면 한 번에 3개까지도 발달 가능)
+            let branchCount = 2;
+            if (vegf > 85 && Math.random() < 0.4 && currentDepth > 1) {
+                branchCount = 3;
+            }
+
+            // 각 자식 가지 생성
+            for (let i = 0; i < branchCount; i++) {
+                // 표적(암세포 위치)을 향하는 방향 유도 벡터 구하기
+                const dx = v3State.targetX - endX;
+                const dy = endY - v3State.targetY; // 캔버스는 하단이 y 증가 방향이므로 반전 보정
+                let targetAngle = Math.atan2(dy, dx) * 180 / Math.PI;
+                if (targetAngle < 0) targetAngle += 360;
+
+                // 기본 프랙탈 변형각 편차 설정 (농도가 높을수록 분지각이 더 격렬하게 꺾임)
+                const baseDeviation = (110 - vegf) * 0.4 + 10; 
+                let newAngle;
+
+                if (branchCount === 3) {
+                    if (i === 0) newAngle = angle - baseDeviation;
+                    else if (i === 1) newAngle = angle;
+                    else newAngle = angle + baseDeviation;
+                } else {
+                    if (i === 0) newAngle = angle - baseDeviation;
+                    else newAngle = angle + baseDeviation;
+                }
+
+                // 표적을 향한 끌림 보정 계수 (자극 강도 조절)
+                // VEGF 농도가 강할수록 강하게 표적으로 휘어짐
+                const attractionFactor = (vegf / 100) * 0.35;
+                
+                // 각도 격차 조절
+                let angleDiff = targetAngle - newAngle;
+                // 각도를 -180 ~ 180도로 표준화
+                while (angleDiff > 180) angleDiff -= 360;
+                while (angleDiff < -180) angleDiff += 360;
+
+                newAngle += angleDiff * attractionFactor;
+
+                // 다음 마디 파라미터 감쇄 연산
+                const lengthLoss = 0.72 + (Math.random() * 0.08); // 약간의 카오스 무작위성 부여
+                const nextLength = length * lengthLoss;
+                const nextThickness = Math.max(0.6, thickness * 0.72);
+
+                v3GenerateVesselTree(endX, endY, nextLength, newAngle, nextThickness, vegf, currentDepth + 1, maxDepth);
+            }
+        }
+
+        function v3AnimateVessels() {
+            if (v3State.drawQueue.length === 0) {
+                v3State.isDrawing = false;
+                v3State.elStatusBadge.textContent = "발달 완료";
+                v3State.elStatusBadge.className = "px-3 py-1 text-xs font-semibold bg-gray-900/60 text-green-400 border border-green-800/50 rounded-full";
+                return;
+            }
+
+            // 시뮬레이션 가속 계수
+            const renderBatchSize = parseInt(v3State.elSpeed.value);
+
+            for (let k = 0; k < renderBatchSize; k++) {
+                if (v3State.drawQueue.length === 0) break;
+                
+                const item = v3State.drawQueue.shift();
+
+                v3State.ctx.beginPath();
+                v3State.ctx.moveTo(item.x1, item.y1);
+                v3State.ctx.lineTo(item.x2, item.y2);
+
+                // 세대가 깊어질수록 모세혈관의 미세함을 표현하기 위해 색상을 선홍색으로 그라데이션 변화
+                // 초기 중심 모혈관은 어둡고 깊은 붉은색, 잔가지는 밝은 산소 결핍성 핏빛 적색
+                const ratio = item.depth / 8;
+                const r = Math.floor(180 + ratio * 75);
+                const g = Math.floor(20 + ratio * 80);
+                const b = Math.floor(40 + ratio * 40);
+
+                v3State.ctx.strokeStyle = `rgb(${r}, ${g}, ${b})`;
+                v3State.ctx.lineWidth = item.thick;
+                v3State.ctx.lineCap = 'round';
+                v3State.ctx.stroke();
+            }
+
+            // 표적이 덮이지 않도록 매 프레임 종양 타겟을 최상위에 덧그려줌
+            v3DrawTargetCircle();
+
+            v3State.animationId = requestAnimationFrame(v3AnimateVessels);
+        }
+
+
+        // =========================================================================
+        // [시뮬레이터 2: 코어 알고리즘 및 뷰]
+        // =========================================================================
+        function v4UpdateUI() {
+            const drugVal = parseInt(v4State.elDrug.value);
+            const depthVal = parseInt(v4State.elDepth.value);
+            const speedVal = parseInt(v4State.elSpeed.value);
+
+            v4State.elDepthVal.textContent = `${depthVal} 세대`;
+
+            let speedText = "보통";
+            if (speedVal <= 3) speedText = "매우 느림";
+            else if (speedVal < 6) speedText = "보통";
+            else if (speedVal < 11) speedText = "매우 빠름";
+            else speedText = "초고속 렌더";
+            v4State.elSpeedVal.textContent = speedText;
+
+            // 약물 투여량 라벨링 색상 및 문구 분기 처리
+            if (drugVal === 0) {
+                v4State.elDrugVal.textContent = "대조군 (0%)";
+                v4State.elDrugVal.className = "px-2.5 py-0.5 text-xs font-bold bg-red-950/60 text-red-400 border border-red-900/50 rounded";
+            } else if (drugVal < 40) {
+                v4State.elDrugVal.textContent = `임상 저농도 (${drugVal}%)`;
+                v4State.elDrugVal.className = "px-2.5 py-0.5 text-xs font-bold bg-yellow-950/60 text-yellow-400 border border-yellow-900/50 rounded";
+            } else if (drugVal < 80) {
+                v4State.elDrugVal.textContent = `치료 유효 농도 (${drugVal}%)`;
+                v4State.elDrugVal.className = "px-2.5 py-0.5 text-xs font-bold bg-emerald-950/60 text-emerald-400 border border-emerald-900/50 rounded";
+            } else {
+                v4State.elDrugVal.textContent = `고용량 독성 경계 (${drugVal}%)`;
+                v4State.elDrugVal.className = "px-2.5 py-0.5 text-xs font-bold bg-blue-950/60 text-blue-400 border border-blue-900/50 rounded";
+            }
+
+            // 실시간 텔레메트리 연동
+            v4State.elTelemetryDrug.textContent = `${drugVal}%`;
+
+            // 항암제 농도에 의한 유사 프랙탈 차원 변화 수학적 산출 모델러
+            const calculatedDimension = Math.max(1.05, 1.82 - (drugVal / 100) * 0.74).toFixed(2);
+            v4State.elFractalDim.textContent = calculatedDimension;
+            v4State.elTelemetryDim.textContent = `D = ${calculatedDimension}`;
+
+            // 기하학 복잡도 등급 및 임상적 견해 업데이트
+            if (calculatedDimension > 1.65) {
+                v4State.elComplexity.textContent = "매우 조밀하고 침습적";
+                v4State.elComplexity.className = "text-xs px-2 py-0.5 rounded font-semibold bg-red-950 text-red-400 border border-red-900/50";
+                v4State.elClinicalInsight.textContent = "약물이 충분히 투여되지 않았습니다. 신생 혈관망의 차원이 고차원을 유지하여 혈관이 그물망 형태로 암조직 전체를 빈틈없이 침투, 악화시키는 기형적인 패턴입니다.";
+                v4State.elStatusBadge.textContent = "대조 상태 분석 중";
+                v4State.elStatusBadge.className = "px-3 py-1 text-xs font-semibold bg-red-950/60 text-red-400 border border-red-900/50 rounded-full";
+            } else if (calculatedDimension > 1.45) {
+                v4State.elComplexity.textContent = "혈관 밀도 억제 시작";
+                v4State.elComplexity.className = "text-xs px-2 py-0.5 rounded font-semibold bg-yellow-950 text-yellow-400 border border-yellow-900/50";
+                v4State.elClinicalInsight.textContent = "미세 모세혈관의 사멸 및 분지각 둔화가 시작되었습니다. 종양 가장자리의 혈관 신생 속도가 서서히 꺾이며 산소 공급에 차질이 시작되는 구간입니다.";
+                v4State.elStatusBadge.textContent = "약물 투여 반응 진행 중";
+                v4State.elStatusBadge.className = "px-3 py-1 text-xs font-semibold bg-yellow-950/60 text-yellow-400 border border-yellow-900/50 rounded-full animate-pulse";
+            } else if (calculatedDimension > 1.2) {
+                v4State.elComplexity.textContent = "성공적인 혈관망 수축";
+                v4State.elComplexity.className = "text-xs px-2 py-0.5 rounded font-semibold bg-emerald-950 text-emerald-400 border border-emerald-900/50";
+                v4State.elClinicalInsight.textContent = "이상적인 타격 상태입니다. 미세 분지 작용이 대부분 무력화되어 영양 공급줄이 완벽히 고갈되었으며, 종양 조직의 자멸사를 적극적으로 유도하고 있습니다.";
+                v4State.elStatusBadge.textContent = "약리학적 제어 상태";
+                v4State.elStatusBadge.className = "px-3 py-1 text-xs font-semibold bg-emerald-950/60 text-emerald-400 border border-emerald-900/50 rounded-full";
+            } else {
+                v4State.elComplexity.textContent = "극심한 혈관 위축 및 파괴";
+                v4State.elComplexity.className = "text-xs px-2 py-0.5 rounded font-semibold bg-blue-950 text-blue-400 border border-blue-900/50";
+                v4State.elClinicalInsight.textContent = "혈관망이 거의 소멸하여 기저 단일 줄기만 겨우 관찰됩니다. 항암 효능은 우수하지만, 지나치게 억제되어 정상 모세혈관 생태계도 마비 상태에 봉착했을 위험이 있는 독성 마지노선 영역입니다.";
+                v4State.elStatusBadge.textContent = "혈관 내피 위축 상태";
+                v4State.elStatusBadge.className = "px-3 py-1 text-xs font-semibold bg-blue-950/60 text-blue-400 border border-blue-900/50 rounded-full";
+            }
+        }
+
+        function v4StartSimulation() {
+            if (v4State.animationId) {
+                cancelAnimationFrame(v4State.animationId);
+                v4State.animationId = null;
+            }
+
+            v4State.isDrawing = true;
+
+            // 도화지 검은색 리셋
+            v4State.ctx.clearRect(0, 0, v4State.canvas.width, v4State.canvas.height);
+            
+            // 시발점(암세포 코어) 가시화
+            v4State.ctx.beginPath();
+            v4State.ctx.arc(v4State.canvas.width / 2, v4State.canvas.height - 40, 25, 0, Math.PI * 2);
+            v4State.ctx.fillStyle = '#220303';
+            v4State.ctx.fill();
+
+            v4State.drawQueue = [];
+            v4State.totalBranches = 0;
+
+            const drug = parseInt(v4State.elDrug.value);
+            const maxDepth = parseInt(v4State.elDepth.value);
+
+            // 트리 형태 생성 연산 시작
+            v4GenerateVesselTree(v4State.canvas.width / 2, v4State.canvas.height - 40, 75, 90, 7, 0, drug, maxDepth);
+            
+            v4State.elBranchCount.textContent = v4State.totalBranches.toLocaleString() + " 개";
+
+            // 프레임 애니메이션 적용
+            v4AnimateVessels();
+        }
+
+        function v4GenerateVesselTree(startX, startY, length, angle, thickness, currentDepth, drug, maxDepth) {
+            v4State.totalBranches++;
+
+            const angleRad = angle * Math.PI / 180;
+            const endX = startX + length * Math.cos(angleRad);
+            const endY = startY - length * Math.sin(angleRad);
+
+            // 드로잉 큐에 예약 등록
+            v4State.drawQueue.push({
+                x1: startX,
+                y1: startY,
+                x2: endX,
+                y2: endY,
+                thick: thickness,
+                depth: currentDepth
+            });
+
+            if (currentDepth >= maxDepth) return;
+
+            // 약물 농도(0~100)에 비례해서 무작위 가지 사멸(Pruning) 적용
+            const pruneChance = (drug / 100) * 0.75; 
+            
+            // 1차 분지 형성 여부 결정
+            if (currentDepth > 0 && Math.random() < pruneChance) {
+                return; // 가지 치기 발생
+            }
+
+            // 항암제가 미치는 영향: 분지각 편차가 좁아지고 힘없이 수그러듦
+            const angleVariance = 28 - (drug / 100) * 14; 
+            const lengthDecay = 0.72 - (drug / 100) * 0.12; // 약을 많이 칠수록 가지가 자라는 길이 감쇄
+
+            // 왼쪽 자식 가닥 생성
+            if (Math.random() >= (pruneChance * 0.3)) {
+                v4GenerateVesselTree(
+                    endX, endY, 
+                    length * lengthDecay, 
+                    angle + angleVariance + (Math.random() * 8 - 4), 
+                    thickness * 0.7, 
+                    currentDepth + 1, 
+                    drug,
+                    maxDepth
+                );
+            }
+
+            // 오른쪽 자식 가닥 생성
+            if (Math.random() >= (pruneChance * 0.3)) {
+                v4GenerateVesselTree(
+                    endX, endY, 
+                    length * lengthDecay, 
+                    angle - angleVariance + (Math.random() * 8 - 4), 
+                    thickness * 0.7, 
+                    currentDepth + 1, 
+                    drug,
+                    maxDepth
+                );
+            }
+        }
+
+        function v4AnimateVessels() {
+            if (v4State.drawQueue.length === 0) {
+                v4State.isDrawing = false;
+                return;
+            }
+
+            const renderBatchSize = parseInt(v4State.elSpeed.value);
+
+            for (let k = 0; k < renderBatchSize; k++) {
+                if (v4State.drawQueue.length === 0) break;
+                
+                const item = v4State.drawQueue.shift();
+
+                v4State.ctx.beginPath();
+                v4State.ctx.moveTo(item.x1, item.y1);
+                v4State.ctx.lineTo(item.x2, item.y2);
+
+                // 약물 농도에 따른 시각적 독성 체감 색상 부여
+                const drugVal = parseInt(v4State.elDrug.value);
+                
+                let strokeColor;
+                if (drugVal < 20) {
+                    strokeColor = `rgba(${170 + item.depth * 10}, ${30 + item.depth * 10}, 45, 0.9)`;
+                } else if (drugVal < 65) {
+                    const reduction = item.depth * 8;
+                    strokeColor = `rgba(${130 + reduction}, ${110 + reduction}, 105, 0.85)`;
+                } else {
+                    strokeColor = `rgba(50, ${110 + item.depth * 15}, ${115 + item.depth * 15}, 0.75)`;
+                }
+
+                v4State.ctx.strokeStyle = strokeColor;
+                v4State.ctx.lineWidth = Math.max(0.7, item.thick);
+                v4State.ctx.lineCap = 'round';
+                v4State.ctx.stroke();
+            }
+
+            v4State.animationId = requestAnimationFrame(v4AnimateVessels);
+        }
+    </script>
+</body>
+</html>
